@@ -1,0 +1,8 @@
+__pycache__/
+.deprecated/
+
+.DS_Store
+
+approval.tar
+similarity.tar
+fcc.tar

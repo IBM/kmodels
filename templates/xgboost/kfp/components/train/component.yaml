@@ -1,0 +1,55 @@
+name: Classifier
+
+description: |
+  Simple example of applying XGBoost to sklearn dataset. We will use for this demo classification dataset
+  from ready to use contained in sklearn (feacthed with sklearn dataset connector).
+
+metadata:
+  annotations: { task: "Classifier" }
+
+inputs:
+  - {
+      name: model_id,
+      type: String,
+      description: "Model id"
+    }
+  - {
+      name: num_class,
+      type: Integer,
+      description: "Number of classes to predic",
+    }
+  - {
+      name: max_depth,
+      type: Integer,
+      description: "Depth of the trees in the boosting process",
+    }
+  - {
+      name: eta,
+      type: Float,
+      description: "The training step for each iteration",
+    }
+  - {
+      name: score_threshold,
+      type: Float,
+      description: "Model score threshold. Below this threshold, model train will fail",
+    }
+
+implementation:
+  container:
+    image: $REGISTRY/component/xgboost-train:1.0.0
+    command:
+      [
+        python,
+        /home/app/train.py,
+
+        --model_id,
+        { inputValue: model_id },
+        --num_class,
+        { inputValue: num_class },
+        --max_depth,
+        { inputValue: max_depth },
+        --eta,
+        { inputValue: eta },
+        --score_threshold,
+        { inputValue: score_threshold }
+      ]

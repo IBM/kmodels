@@ -1,0 +1,118 @@
+{
+  "kserve": {
+    "predictor": {
+      "type": "xgboost",
+      "storageUri": "s3://$MODEL_ID/models"
+    },
+    "transformer": {
+      "image": "$REGISTRY/inference/xgboost-transformer:1.0.0"
+    }
+  },
+  "arguments": [
+    {
+      "name": "num_class",
+      "component": [
+        "kfp"
+      ],
+      "description": "Number of classes to predict",
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    {
+      "name": "max_depth",
+      "component": [
+        "kfp"
+      ],
+      "description": "Depth of the trees in the boosting process",
+      "type": "integer",
+      "minimum": 0.0,
+      "default": 3
+    },
+    {
+      "name": "eta",
+      "component": [
+        "kfp"
+      ],
+      "description": "The training step for each iteration",
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.3
+    },
+    {
+      "name": "score_threshold",
+      "component": [
+        "kfp"
+      ],
+      "description": "Score threshold. Below this score, model be rejected",
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "enable_grpc",
+      "component": [
+        "transformer"
+      ],
+      "description": "Enable gRPC for the model server",
+      "type": "String",
+      "default": "false"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "default",
+      "type": "array",
+      "shape": [-1],
+      "parameters": [
+        {
+          "type": "number"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output0",
+      "type": "number",
+      "parameter": [
+        {
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "output1",
+      "type": "array",
+      "shape": [-1],
+      "parameter": [
+        {
+          "type": "number"
+        }
+      ]
+    }
+  ],
+  "engines" : {
+    "controller": ">=0.1.0"
+  },
+  "resources": {
+    "predictor": {
+      "requests": {
+        "cpu": "100m"
+      },
+      "limits": {
+        "cpu": "500m"
+      }
+    },
+    "pipeline": {
+      "requests": {
+        "cpu": "1"
+      },
+      "limits": {
+        "cpu": "2"
+      }
+    }
+  }
+}

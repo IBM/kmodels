@@ -1,0 +1,572 @@
+openapi: 3.1.0
+
+info:
+  title: KModels API
+  description: API
+  contact:
+    name: IBM
+    url: https://www.ibm.com
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: General
+  - name: Model
+  - name: Models
+  - name: Graph
+  - name: Templates
+  - name: Template
+  - name: Event
+
+# security:
+#   - basicAuth: []
+
+paths:
+
+  /version:
+    get:
+      tags:
+        - General
+      summary: Get version
+      description: Get version
+      responses:
+        "200":
+          description: successful operation
+  /sync:
+    post:
+      tags:
+        - General
+      summary: Sync
+      description: Synchronize
+      responses:
+        "200":
+          description: successful operation
+
+  /model:
+    post:
+      tags:
+        - Model
+      summary: Instansiate model
+      description: Instansiate a model from a template
+      parameters:
+        - name: template
+          description: Template name
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: version
+          description: Template version
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: tags
+          description: Model tags
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+      requestBody:
+        description: Configuration
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Configuration'
+      responses:
+        "201":
+          description: model created
+        "409":
+          description: already exists
+
+  /model/{id}:
+    get:
+      tags:
+        - Model
+      summary: Model metadata
+      description: Model metadata
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: user
+          description: User id
+          schema:
+            type: string
+          in: query
+          required: false
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+    delete:
+      tags:
+        - Model
+      summary: Delete model
+      description: Delete running model
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: successful operation
+    # put:
+    #   tags:
+    #     - Model
+    #   summary: Update model
+    #   description: Update a model
+    #   parameters:
+    #     - name: id
+    #       description: Model id
+    #       schema:
+    #         type: string
+    #       in: path
+    #       required: true
+    #   requestBody:
+    #     description: Configuration
+    #     content:
+    #       application/json:
+    #         schema:
+    #           $ref: '#/components/schemas/ModelConfig'
+    #   responses:
+    #     "201":
+    #       description: model updated
+    #     "409":
+    #       description: model doesn't exists
+
+  /model/{id}/ready:
+    get:
+      tags:
+        - Model
+      summary: Model ready
+      description: Indicates if all the models are ready for inferencing
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+
+  /model/{id}/infer/predict:
+    post:
+      tags:
+        - Model
+      summary: Get prediction
+      description: Get prediction
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+      requestBody:
+        description: Data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instances:
+                  type: array
+                  items:
+                    type: object
+                    example: {}
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+
+  /model/{id}/infer/explain:
+    post:
+      tags:
+        - Model
+      summary: Get explanation
+      description: Get explanation
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+      requestBody:
+        description: Data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instances:
+                  type: array
+                  items:
+                    type: object
+                    example: {}
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+
+  /model/{id}/retrain:
+    post:
+      tags:
+        - Model
+      summary: Model retrain
+      description: Model retrain
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+
+  /model/{id}/restore:
+    post:
+      tags:
+        - Model
+      summary: Model restore
+      description: Restore an archived model
+      parameters:
+        - name: id
+          description: Model id
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: build
+          description: Model build id
+          schema:
+            type: string
+          in: query
+          required: false
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: model not found
+
+  /model/{id}/feedback:
+    parameters:
+      - name: id
+        description: Model id
+        schema:
+          type: string
+        in: path
+        required: true
+    post:
+      tags:
+        - Model
+      summary: Add feedback
+      description: Set inference feedback
+      requestBody:
+        description: Feedback
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: bad request
+    get:
+      tags:
+        - Model
+      summary: Get feedback
+      description: Get feedback
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date
+          required: false
+          schema:
+            type: date
+        - name: endDate
+          in: query
+          description: End date
+          required: false
+          schema:
+            type: date
+        - name: pageNumber
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Page number
+        - name: pageSize
+          in: query
+          description: Page size
+          required: false
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: feedback not found
+    delete:
+      tags:
+        - Model
+      summary: Delete feedbacks
+      description: Delete model feedbacks
+      responses:
+        "200":
+          description: successful operation
+
+  /models:
+    get:
+      tags:
+        - Models
+      summary: Get models
+      description: Return list of deployed models
+      parameters:
+        - name: tags
+          description: Filter model by tags
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+      responses:
+        "200":
+          description: successful operation
+
+  /graph/splitter:
+    post:
+      tags:
+        - Graph
+      summary: Create splitter
+      description: Create inference splitter graph
+      parameters:
+        - name: id
+          description: Graph id
+          schema:
+            type: string
+          in: query
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Splitter'
+      responses:
+        "201":
+          description: graph created
+    put:
+      tags:
+        - Graph
+      summary: Update splitter
+      description: Update inference splitter graph
+      parameters:
+        - name: id
+          description: Graph id
+          schema:
+            type: string
+          in: query
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Splitter'
+      responses:
+        "200":
+          description: graph updated
+
+  /graph/ensemble:
+    post:
+      tags:
+        - Graph
+      summary: Create ensemble
+      description: Create inference ensemble graph
+      parameters:
+        - name: id
+          description: Graph id
+          schema:
+            type: string
+          in: query
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ensemble'
+      responses:
+        "201":
+          description: graph created
+
+  /store/templates:
+    get:
+      tags:
+        - Templates
+      summary: List model templates
+      description: List all available model templates
+      responses:
+        "200":
+          description: successful operation
+
+  /store/template/{name}/info:
+    get:
+      tags:
+        - Template
+      summary: Get template information
+      description: Get template information
+      parameters:
+        - name: name
+          description: Template
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: successful operation
+        "404":
+          description: not found
+
+  /event/{type}:
+    parameters:
+      - name: type
+        description: Event type
+        schema:
+          type: string
+          enum: [model, data]
+        in: path
+        required: true
+    post:
+      tags:
+        - Event
+      summary: Event
+      description: Event
+      requestBody:
+        description: Event
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: successful operation
+
+components:
+
+  schemas:
+
+    Configuration:
+      type: object
+      properties:
+        arguments:
+          type: object
+        archiver:
+          type: object
+          properties:
+            keep:
+              type: integer
+        serve:
+          type: object
+          properties:
+            resources:
+              type: object
+              properties:
+                cpu:
+                  type: string
+                memory:
+                  type: string
+        pipeline:
+          type: object
+          properties:
+            resources:
+              type: object
+            keep:
+              type: integer
+        connector:
+          type: array
+          items:
+          - type: object
+            properties:
+              id:
+                type: string
+              version:
+                type: string
+              arguments:
+                type: object
+        monitor:
+          type: array
+          items:
+          - type: object
+            properties:
+              id:
+                type: string
+              version:
+                type: string
+              schedule:
+                type: string
+              arguments:
+                type: object
+        logger:
+          type: boolean
+
+        Splitter:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: model id
+              weight:
+                type: integer
+                description: distribution weight
+
+    Ensemble:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: model id
+          name:
+            type: string
+            description: name
+
+  # securitySchemes:
+  #   basicAuth:
+  #     type: http
+  #     scheme: basic

@@ -1,0 +1,90 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: xgboost-pipeline
+  annotations:
+    tekton.dev/output_artifacts: '{}'
+    tekton.dev/input_artifacts: '{}'
+    tekton.dev/artifact_bucket: mlpipeline
+    tekton.dev/artifact_endpoint: minio-service.kubeflow:9000
+    tekton.dev/artifact_endpoint_scheme: http://
+    tekton.dev/artifact_items: '{"classifier": []}'
+    sidecar.istio.io/inject: "false"
+    tekton.dev/template: ''
+    pipelines.kubeflow.org/big_data_passing_format: $(workspaces.$TASK_NAME.path)/artifacts/$ORIG_PR_NAME/$TASKRUN_NAME/$TASK_PARAM_NAME
+    pipelines.kubeflow.org/pipeline_spec: '{"description": "The classic multi-class
+      classification by xgboost", "inputs": [{"name": "model_id", "type": "String"},
+      {"default": "0", "name": "num_class", "optional": true, "type": "Integer"},
+      {"default": "3", "name": "max_depth", "optional": true, "type": "Integer"},
+      {"default": "0.3", "name": "eta", "optional": true, "type": "Float"}, {"default":
+      "0.5", "name": "score_threshold", "optional": true, "type": "Float"}], "name":
+      "XGboost Pipeline"}'
+  labels:
+    pipelines.kubeflow.org/pipelinename: ''
+    pipelines.kubeflow.org/generation: ''
+spec:
+  params:
+  - name: eta
+    value: '0.3'
+  - name: max_depth
+    value: '3'
+  - name: model_id
+    value: ''
+  - name: num_class
+    value: '0'
+  - name: score_threshold
+    value: '0.5'
+  pipelineSpec:
+    params:
+    - name: eta
+      default: '0.3'
+    - name: max_depth
+      default: '3'
+    - name: model_id
+    - name: num_class
+      default: '0'
+    - name: score_threshold
+      default: '0.5'
+    tasks:
+    - name: classifier
+      params:
+      - name: eta
+        value: $(params.eta)
+      - name: max_depth
+        value: $(params.max_depth)
+      - name: model_id
+        value: $(params.model_id)
+      - name: num_class
+        value: $(params.num_class)
+      - name: score_threshold
+        value: $(params.score_threshold)
+      taskSpec:
+        steps:
+        - name: main
+          command:
+          - python
+          - /home/app/train.py
+          - --model_id
+          - $(inputs.params.model_id)
+          - --num_class
+          - $(inputs.params.num_class)
+          - --max_depth
+          - $(inputs.params.max_depth)
+          - --eta
+          - $(inputs.params.eta)
+          - --score_threshold
+          - $(inputs.params.score_threshold)
+          image: $REGISTRY/component/xgboost-train:1.0.0
+        params:
+        - name: eta
+        - name: max_depth
+        - name: model_id
+        - name: num_class
+        - name: score_threshold
+        metadata:
+          labels:
+            pipelines.kubeflow.org/cache_enabled: "true"
+          annotations:
+            task: Classifier
+            pipelines.kubeflow.org/component_spec_digest: '{"name": "Classifier",
+              "outputs": [], "version": "Classifier@sha256=df13fddb2be8017c8e810f76ab95fea1e5ab50304adca3d03606e21bd1baedc5"}'

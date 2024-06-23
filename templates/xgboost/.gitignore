@@ -1,0 +1,7 @@
+**/__pycache__/
+
+output/
+workspace/
+
+.DS_Store
+*.tar

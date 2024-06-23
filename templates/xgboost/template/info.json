@@ -1,0 +1,9 @@
+{
+  "name": "xgboost",
+  "summary": "Xgboost classifier",
+  "description": "Xgboost classifier",
+  "category": "classification",
+  "organization": "ibm",
+  "author": "",
+  "latest": "1.0.0"
+}
