@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 import os
 import sys
 import logging

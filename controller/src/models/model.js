@@ -1,3 +1,5 @@
+/* Copyright contributors to the Kmodels project */
+
 "use strict";
 
 const {v1: uuidv1} = require('uuid');

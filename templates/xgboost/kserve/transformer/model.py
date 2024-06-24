@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 import kserve
 import logging
 import argparse

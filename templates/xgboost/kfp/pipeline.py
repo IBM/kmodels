@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 from kfp import dsl, components
 from kfp_tekton.compiler import TektonCompiler
 

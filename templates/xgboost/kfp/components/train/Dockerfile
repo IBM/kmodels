@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 ARG version=latest
 FROM xgboost-common:$version as common
 FROM xgboost-thirdparty:$version as thirdparty

@@ -1,3 +1,5 @@
+/* Copyright contributors to the Kmodels project */
+
 "use strict";
 
 const stream = require('stream');

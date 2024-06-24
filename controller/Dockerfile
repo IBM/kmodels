@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 # FROM node:20
 FROM node:20
 

@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 FROM python:3.11-slim
 
 # For MAC M1 uncomment this lines

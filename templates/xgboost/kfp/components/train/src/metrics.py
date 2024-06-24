@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 class Metrics:
 
     # Supported formats

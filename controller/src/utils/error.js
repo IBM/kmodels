@@ -1,3 +1,5 @@
+/* Copyright contributors to the Kmodels project */
+
 "use strict";
 
 class HttpRequestError extends Error {

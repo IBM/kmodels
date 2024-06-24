@@ -1,3 +1,5 @@
+# Copyright contributors to the Kmodels project
+
 # Pull official base image
 FROM python:3.12-slim
 
