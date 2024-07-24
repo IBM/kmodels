@@ -1,0 +1,32 @@
+{
+  "name": "kc",
+  "version": "1.0.0-rc.1",
+  "description": "KModels cli client",
+  "main": "index.js",
+  "author": "Eyal Cohen",
+  "scripts": {
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "license": "ISC",
+  "bin": {
+    "kc": "index.js"
+  },
+  "dependencies": {
+    "clui": "^0.3.6",
+    "columnify": "^1.6.0",
+    "commander": "^11.1.0",
+    "dotenv": "^16.0.3",
+    "got": "^11.8.2",
+    "tar": "^7.4.0",
+    "timeago.js": "^4.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.39.0"
+  },
+  "overrides": {
+    "cli-color": "^2.0.4"
+  }
+}

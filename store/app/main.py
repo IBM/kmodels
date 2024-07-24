@@ -17,8 +17,8 @@ app = FastAPI(
   description="KModels store API",
   version="0.0.1",
   contact={
-    "name": "Eyal Cohen",
-    "email": "eyalco@il.ibm.com",
+    "name": "John Doe",
+    "email": "user@acme.com",
   },
   license_info={
     "name": "Apache 2.0",

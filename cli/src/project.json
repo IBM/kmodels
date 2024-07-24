@@ -1,0 +1,138 @@
+[
+  {
+    "path": ".gitignore",
+    "data": "output/\n*.tar"
+  },
+  {
+    "path": "GUIDE.md",
+    "data": "Template project {{name}} was created successfully.\n\nBuild template images and push to container registry\n\n  cd {{name}}\n  make build push\n\nOr specify your own container registry\n\n  make build push REGSITRY=<registr>/<namesapce>\n\nTo clean local files\n\n  make prune\n\nUse the model script to run end to end model training and inferencing\n\n  chmod +x hack/model.sh\n  ./hack/model.sh\n\nHappy KModeling"
+  },
+  {
+    "path": "Makefile",
+    "data": "# Template version\nVERSION ?= $(shell cat VERSION)\n\n# Container registry\nREGISTRY ?= {{registry}}{{namespace}}\n\n## Build\n\nbuild: build-kserve build-kfp build-pipeline build-template\n\nbuild-kserve: build-common build-thirdparty\n\tcd kserve/predictor && \\\n\t\t{{docker}} build -t ${REGISTRY}/inference/{{name}}-predictor:${VERSION} \\\n\t\t\t--build-arg version=${VERSION} .\n\nbuild-kfp: build-common build-thirdparty\n\tcd kfp/components/train && \\\n\t\t{{docker}} build -t ${REGISTRY}/component/{{name}}-train:${VERSION} \\\n\t\t\t--build-arg version=${VERSION} .\n\nbuild-pipeline:\n\tcd kfp && \\\n\t\tpython pipeline.py\n\tmkdir -p template/${VERSION}/pipeline\n\tmv kfp/pipeline.yaml ./template/${VERSION}/pipeline\n\nbuild-template:\n\tkc template pack template\n\nbuild-common:\n\tcd common && \\\n\t{{docker}} build -t {{name}}-common:${VERSION} .\n\nbuild-thirdparty:\n\tcd third_party && \\\n\t{{docker}} build -t {{name}}-thirdparty:${VERSION} .\n\n## Push\n\npush: push-kserve push-kfp\n\npush-kserve:\n\t{{docker}} push ${REGISTRY}/inference/{{name}}-predictor:${VERSION}\n\npush-kfp:\n\t{{docker}} push ${REGISTRY}/component/{{name}}-train:${VERSION}\n\n## Clean\n\nclean:\n\trm -f *.tar\n\trm -rf output\n\nprune: clean\n\t{{docker}} rmi -f \\\n\t\t{{name}}-common:${VERSION} \\\n\t\t{{name}}-thirdparty:${VERSION} \\\n\t\t${REGISTRY}/component/{{name}}-train:${VERSION} \\\n\t\t${REGISTRY}/inference/{{name}}-predictor:${VERSION}\n\n.PHONY: build build-kserve build-kfp build-pipeline build-template build-common \\\n\t\tbuild-thirdparty push push-kserve push-kfp clean prune\n"
+  },
+  {
+    "path": "README.md",
+    "data": "# {{name}}\n\nAuto generated template project for building KModels template. For more template examples, see KModels [template examples](templates) repository\n\n### Prerequisites\n\n1. Docker tool (docker, podamn etc)\n2. Python [kfp](https://www.kubeflow.org/docs/components/pipelines/v1/sdk/install-sdk/#install-the-kubeflow-pipelines-sdk) 1.8 package installed\n\n### Build a Template\n\n1. Create and build ML workflow for generating a model\n2. Create and build custom KServe Inference Server\n3. Define template info and manifest\n4. Build pipeline and template\n\n### Useful links\n\n1. [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/) - Learn how to create ML workflows\n2. [KServe](https://kserve.github.io/website/master/) - Explain how to use or create custom inference servers fro model predictions.\n"
+  },
+  {
+    "path": "VERSION",
+    "data": "{{version}}"
+  },
+  {
+    "path": "common/.dockerignore",
+    "data": "**/__pycahce__/\n*.md\n"
+  },
+  {
+    "path": "common/Dockerfile",
+    "data": "FROM scratch\nWORKDIR /common\nCOPY . .\n"
+  },
+  {
+    "path": "common/README.md",
+    "data": "Common sources for kubeflow pipelines and kserve components. During components build, the common folder will be copied to the docker image.\n"
+  },
+  {
+    "path": "data/README.md",
+    "data": "Model training and testing data. For local testing, create training data file `data.csv` and `input.json` for inferencing."
+  },
+  {
+    "path": "examples/README.md",
+    "data": "Model config examples."
+  },
+  {
+    "path": "hack/README.md",
+    "data": "Project helper scripts"
+  },
+  {
+    "path": "hack/model.sh",
+    "data": "#!/bin/bash\n\n# Build all\nmake build\n\n# Build mode\n{{docker}} run -it --rm \\\n  -v $(pwd)/output:/output \\\n  -v $(pwd)/data:/data \\\n  --entrypoint bash \\\n  {{registry}}{{namespace}}/component/{{name}}-train:latest \\\n  -c 'python train.py --model_id={{name}} --storage=local --max_depth=3 --target=target'\n\n# Serve model\n{{docker}} run -it --rm \\\n  -p 8080:8080 \\\n  -v $(pwd)/output/models:/models \\\n  --entrypoint bash \\\n  {{registry}}{{namespace}}/inference/{{name}}-predictor:latest \\\n  -c 'python model.py --model_dir=/models --enable_grpc=false --enable_docs_url=true'"
+  },
+  {
+    "path": "kfp/components/train/Dockerfile",
+    "data": "# Add common\nFROM {{name}}-common:latest as common\n\n# Add third party libraries\nFROM {{name}}-thirdparty:latest as thirdparty\n\n# Base image for training\nFROM python:{{python}}\n\n# Install requirements\nCOPY requirements.txt .\nRUN python3 -m pip install -r \\\n    requirements.txt --quiet --no-cache-dir \\\n    && rm -f requirements.txt\n\nWORKDIR /component/src\n\nCOPY --from=common /common ./common\nCOPY ./src .\n\nENTRYPOINT python3 train.py"
+  },
+  {
+    "path": "kfp/components/train/README.md",
+    "data": "# Train\n\nBuild component docker image\n```\nmake build-kfp\n```\n\nAdd training data file `data.csv` to `data` folder and run training\n```\ndocker run -it --rm \\\n    -v $(pwd)/output:/output \\\n    -v $(pwd)/data:/data \\\n    --entrypoint bash \\\n    {{registry}}{{namespace}}/component/{{name}}-train:latest \\\n    -c 'python train.py --model_id={{name}} --storage=local'\n```\n\nThe generated model will be created in `output/models`\n\nFor development with local code mapped to container, run\n```\ndocker run -it --rm \\\n    -v $(pwd)/output:/output \\\n    -v $(pwd)/data:/data \\\n    -v $(pwd)/kfp/components/train/src:/train \\\n    -v $(pwd)/common:/train/common \\\n    -v $(pwd)/third_party:/train/third_party \\\n    -w /train \\\n    --entrypoint bash \\\n    {{registry}}{{namespace}}/component/{{name}}-train:latest\n```\n\nand run training with the command\n```\npython train.py --model_id={{name}} --storage=local\n```"
+  },
+  {
+    "path": "kfp/components/train/component.yaml",
+    "data": "# Auto Generated by KModels CLI\n\nname: \"{{name}}\"\n\ndescription: |\n  Write here component description\n\ninputs:\n  - {\n      name: model_id,\n      type: String,\n      description: \"Model id\"\n    }\n  - {\n      name: models_path,\n      type: String,\n      default: \"models\",\n      description: \"Models path in model storage\"\n    }\n  - {\n      name: storage,\n      type: String,\n      default: \"minio\",\n      description: \"Storage type\"\n    }\n\nimplementation:\n  container:\n    image: \"$REGISTRY/component/{{name}}-train:{{version}}\"\n    command:\n      [\n        python,\n        /component/src/train.py,\n\n        --model_id,\n        { inputValue: model_id },\n        --models_path,\n        { inputValue: models_path },\n        --storage,\n        { inputValue: storage },\n      ]\n"
+  },
+  {
+    "path": "kfp/components/train/requirements.txt",
+    "data": "minio"
+  },
+  {
+    "path": "kfp/components/train/src/metrics.py",
+    "data": "class Metrics:\n\n    def __init__(self):\n        self.metrics = []\n        self.add(\"score\", 1.0, \"raw\")\n\n    def add(self, name: str, value: float, format: str = \"percentage\"):\n        self.metrics.append({\n            \"name\": name,\n            \"value\": value,\n            'format': format\n        })\n\n    def get(self, name):\n        return next(m for m in self.metrics if m[\"name\"] == name)\n\n    def get_value(self, name):\n        return self.get(name)[\"value\"]\n\n    def set_value(self, name: str, value: float):\n        self.get(name)[\"value\"] = value\n\n    def get_format(self, name):\n        return self.get(name)[\"format\"]\n\n    def set_format(self, name: str, value: str):\n        self.get(name)[\"format\"] = value\n\n    def get_score(self):\n        return self.get_value(\"score\")\n\n    def set_score(self, value):\n        if value >= 0.0 and value <= 1.0:\n            self.set_value(\"score\", value)\n\n    def remove(self, name):\n        pass\n\n    def get_all(self, format: str = \"kmodels\"):\n        if format == \"kubeflow\":\n            return list(map(lambda m: {\n                    \"name\": m[\"name\"], \"numberValue\": m[\"value\"], \"format\": m[\"format\"].upper()\n                }, self.metrics))\n        return self.metrics\n"
+  },
+  {
+    "path": "kfp/components/train/src/storage.py",
+    "data": "import os\nimport io\nimport json\nimport shutil\nimport logging\n\nfrom minio import Minio\n\n# Storage base class\nclass Storage:\n    pass\n\n# Local storage\nclass LocalStorage(Storage):\n\n    def __init__(self, path = \"/\"):\n        self.path = path\n\n    def get_object_data(self, bucket_name, object_name):\n        file = os.path.join(self.path, object_name)\n        logging.info(f\"Get object {file}\")\n        with open(file) as f:\n            return f.read()\n\n    def get_json(self, bucket_name, object_name):\n        data = json.loads(self.get_object_data(bucket_name, object_name))\n        if type(data) is str:\n            data = json.loads(data)\n        return data\n\n    def get_csv(self, bucket_name, object_name):\n        return self.get_object_data(bucket_name, object_name)\n\n    def put_json(self, bucket_name, object_name, data):\n        file_path = os.path.join(self.path, \"output\", os.path.basename(object_name))\n        with open(file_path, 'w') as file:\n            json.dump(data, file, indent=2)\n\n    def put_file(self, bucket_name, object_name, file_name):\n        file_size = os.stat(file_name).st_size\n        src = file_name\n        dst = os.path.join(self.path, \"/output/models\", os.path.basename(file_name))\n        dirname = os.path.dirname(dst)\n        if not os.path.exists(dirname):\n            logging.info(f\"Creating folder {dirname}\")\n            os.makedirs(dirname)\n        logging.info(f\"put_file {bucket_name}/{object_name} {file_name} with size: {file_size}\")\n        shutil.copyfile(src, dst)\n\n# S3 storage\nclass MinioStorage(Storage):\n\n    def __init__(self):\n        self.client = Minio(\n            endpoint=os.getenv(\"MINIO_URL\") + \":\" + os.getenv(\"MINIO_PORT\"),\n            access_key=os.getenv(\"MINIO_ACCESS_KEY\"),\n            secret_key=os.getenv(\"MINIO_SECRET_KEY\"),\n            secure=False)\n\n    def get_object_data(self, bucket_name, object_name):\n        logging.info(f\"Get object {bucket_name}/{object_name}\")\n        object = self.client.get_object(bucket_name, object_name)\n        return object.data\n\n    def get_json(self, bucket_name, object_name):\n        data = json.loads(self.get_object_data(bucket_name, object_name))\n        if type(data) is str:\n            data = json.loads(data)\n        return data\n\n    def put_json(self, bucket_name, object_name, data):\n        data = json.dumps(data).encode(\"utf-8\")\n        data_stream = io.BytesIO(data)\n        self.client.put_object(\n            bucket_name=bucket_name,\n            object_name=object_name,\n            data=data_stream,\n            length=len(data),\n            content_type=\"application/json\"\n        )\n\n    def get_csv(self, bucket_name, object_name):\n        return self.get_object_data(bucket_name, object_name).decode(\"utf-8\")\n\n    def put_file(self, bucket_name, object_name, file_name):\n        file_size = os.stat(file_name).st_size\n        logging.info(f\"put_file {bucket_name} {file_name} with size: {file_size}\")\n        if self.client.bucket_exists(bucket_name):\n            # part size is aligned with Minio's MAX_PART_SIZE constant representing 5GB - to avoid\n            # splitting to multipart for now\n            self.client.fput_object(bucket_name, object_name, file_name, part_size=5 * 1024 * 1024 * 1024)\n\n# Storage factory\nclass StorageFactory:\n\n    def get_storage(self, stroarge):\n        if stroarge == 'local':\n            return LocalStorage()\n        elif stroarge == 'minio':\n            return MinioStorage()\n        else:\n            raise ValueError(stroarge)"
+  },
+  {
+    "path": "kfp/components/train/src/train.py",
+    "data": "import sys\nimport argparse\nimport logging\n\nfrom storage import StorageFactory\nfrom metrics import Metrics\n\n# Logging\nlogging.basicConfig(\n  level=logging.INFO,\n  format=\"%(asctime)s [%(levelname)s] %(message)s\",\n  handlers=[\n    logging.StreamHandler()\n  ]\n)\n\n# Train\ndef train(storage, args):\n\n    # Generate here your model and save it to /tmp/model.<ext>\n    with open(\"/tmp/model.json\", \"w\") as outfile:\n        outfile.write(\"model\")\n\n    # Upload model to storage\n    storage.put_file(args.model_id, f\"{args.models_path}/model.json\", '/tmp/model.json')\n\n    # Calculate model metrics and upload to storage\n    metric = Metrics()\n    metric.set_score(1.0)\n    storage.put_json(args.model_id, 'metrics.json', metric.get_all())\n\n    # Model was created successfully\n    logging.info(\"completed\")\n\n# Main\nif __name__ == '__main__':\n\n    # Defining command line arguments\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--model_id', type=str,\n                        help='Model unique id')\n    parser.add_argument('--models_path', type=str, default=\"models\",\n                        help='Model file path')\n    parser.add_argument('--storage', type=str, default=\"minio\",\n                        help=\"Storage type local/minio\")\n\n    # Parse command line arguments\n    args, _ = parser.parse_known_args()\n    logging.info(f\"args: {args}\")\n\n    # Create storage interafce\n    storage = StorageFactory().get_storage(args.storage)\n\n    # Perform training\n    try:\n        train(storage, args)\n    except Exception as ex:\n        logging.info(ex)\n        error ={ \"message\": str(ex), \"code\": 100 }\n        storage.put_json(args.model_id, 'error.json', error)\n        sys.exit(1)\n"
+  },
+  {
+    "path": "kfp/pipeline.py",
+    "data": "from kfp import dsl, components\nfrom kfp_tekton.compiler import TektonCompiler\n\n@dsl.pipeline(\n    name='{{name}} Pipeline',\n    description='Auto generated pipeline'\n)\ndef pipeline(model_id: str):\n\n    # Loads the yaml manifest for each component\n    train_component = components.load_component_from_file('components/train/component.yaml')\n\n    # Run tasks\n    train_component(model_id)\n\n    # TTL for the workflow to persist after completion (1 minute)\n    dsl.get_pipeline_conf().set_ttl_seconds_after_finished(60)\n\nif __name__ == '__main__':\n    TektonCompiler().compile(pipeline, __file__.replace('.py', '.yaml'))\n"
+  },
+  {
+    "path": "kserve/predictor/.dockerignore",
+    "data": "Dockerfile\n*.md"
+  },
+  {
+    "path": "kserve/predictor/Dockerfile",
+    "data": "ARG version=latest\n\nFROM {{name}}-common:$version as common\nFROM {{name}}-thirdparty:$version as thirdparty\n\nFROM python:{{python}}\n\nCOPY requirements.txt .\nRUN pip install --no-cache-dir --upgrade pip -r requirements.txt\n\nARG HOME=/tmp\nENV HOME ${HOME}\n\nWORKDIR /src\n\nCOPY --from=common /common ./common\nCOPY --from=thirdparty /third_party ./third_party\n\nCOPY ./src .\n\nENTRYPOINT [\"python\", \"model.py\"]"
+  },
+  {
+    "path": "kserve/predictor/README.md",
+    "data": "# Predictor\n\nBuild component docker image\n```\nmake build-kserve\n```\n\nRun predictor container and share the local pretrained model with the predictor\n```\ndocker run -it --rm \\\n    -p 8080:8080 \\\n    -v $(pwd)/output/models:/models \\\n    --entrypoint bash \\\n    {{registry}}{{namespace}}/inference/{{name}}-predictor:latest \\\n    -c 'python model.py --model_dir=/models --enable_grpc=false'\n```\n\nOpen second terminal and check predictor readiness\n```\ncurl http://localhost:8080/v1/models/model\n```\n\nyou should receive\n```\n{\"name\":\"model\",\"ready\":true}\n```\n\nCreate `input.json` in `data` folder and send inference request locally\n```\ncurl http://localhost:8080/v1/models/model:predict -H 'Content-Type: application/json' -d @data/input.json\n```\n\nyou should see prediction results returned in the following format\n```\n{\"predictions\":\n    [\n        {<prediction>}\n    ]\n}\n```\n\nFor development with local code mapped to container, run\n```\ndocker run -it --rm \\\n    -p 8080:8080 \\\n    -v $(pwd)/output/models:/models \\\n    -v $(pwd)/data:/data \\\n    -v $(pwd)/kserve/predictor/src:/predictor \\\n    -v $(pwd)/common:/predictor/common \\\n    -v $(pwd)/third_party:/predictor/third_party \\\n    -w /predictor \\\n    --entrypoint bash \\\n    {{registry}}{{namespace}}/inference/{{name}}-predictor:latest\n```\n\nand start inference server with the command:\n```\npython model.py --model_dir=/models --enable_grpc=false --enable_docs_url=true\n```\n"
+  },
+  {
+    "path": "kserve/predictor/requirements.txt",
+    "data": "kserve[storage]=={{kserve}}"
+  },
+  {
+    "path": "kserve/predictor/src/model.py",
+    "data": "import kserve\nimport logging\nimport argparse\n\nfrom predictor import Predictor\nfrom kserve.errors import ModelMissingError\n\n# Logging\nlogging.basicConfig(level=kserve.constants.KSERVE_LOGLEVEL)\n\n# Main\nif __name__ == \"__main__\":\n\n    # Defining and parsing the command-line arguments\n    parser = argparse.ArgumentParser(parents=[kserve.model_server.parser])\n    parser.add_argument('--model_name', default=\"model\",\n                        help='The name that the model is served under.')\n    parser.add_argument('--model_dir', required=True,\n                        help='A URI pointer to the model binary')\n    args, _ = parser.parse_known_args()\n    logging.info(f\"args: {args}\")\n\n    # Create and load model\n    predictor = Predictor(args.model_name, args.model_dir, args.model_name)\n    try:\n        predictor.load()\n    except ModelMissingError:\n        logging.error(f\"fail to locate model file for model {args.model_name} under dir {args.model_dir}\")\n\n    # Start serving\n    kserve.ModelServer().start([predictor] if predictor.ready else [])\n"
+  },
+  {
+    "path": "kserve/predictor/src/predictor.py",
+    "data": "import os\nimport kserve\nimport pathlib\n\nfrom typing import Dict, Union\n\nfrom kserve.storage import Storage\nfrom kserve.protocol.infer_type import InferRequest, InferResponse\nfrom kserve.utils.utils import get_predict_input, get_predict_response\nfrom kserve.errors import ModelMissingError, InferenceError\n\nclass Predictor(kserve.Model):\n\n    def __init__(self, name: str, model_dir: str, model_name: str):\n        super().__init__(name)\n        self.model_dir = model_dir\n        self.model_name = model_name\n\n    def load(self) -> bool:\n        model_path = pathlib.Path(Storage.download(self.model_dir))\n        model_file = os.path.join(model_path, f\"{self.model_name}.json\")\n        try:\n\n            ''' Replace with your model loading function '''\n            with open(model_file) as f:\n                self.model = f.read()\n\n        except Exception as e:\n            raise ModelMissingError(model_file)\n        self.ready = True\n        return self.ready\n\n    def predict(self, payload: Union[Dict, InferRequest],  headers: Dict[str, str] = None)->Union[Dict, InferResponse]:\n        try:\n            instances = get_predict_input(payload)\n\n            ''' Run prediction '''\n\n        except Exception as e:\n            raise InferenceError(str(e))\n        return get_predict_response(payload, {}, self.name)"
+  },
+  {
+    "path": "pretrained/README.md",
+    "data": "Pretrained model binaries"
+  },
+  {
+    "path": "pretrained/model/.gitignore",
+    "data": "*.joblib\n*.pkl"
+  },
+  {
+    "path": "research/README.md",
+    "data": "This folder contains research code for model development. The research code is for development only and it is not part of the final template package.\n"
+  },
+  {
+    "path": "template/info.json",
+    "data": "{\n    \"name\": \"{{name}}\",\n    \"summary\": \"Model template\",\n    \"description\": \"Auto generated model template\",\n    \"organization\": \"acme\",\n    \"author\": \"\",\n    \"category\": \"\"\n}"
+  },
+  {
+    "path": "template/latest/manifest.json",
+    "data": "{\n  \"kserve\": {\n    \"predictor\": {\n      \"image\": \"$REGISTRY/inference/{{name}}-predictor:latest\",\n      \"storageUri\": \"s3://$MODEL_ID/models\"\n     }\n  },\n  \"arguments\": [\n  ]\n}"
+  },
+  {
+    "path": "third_party/.dockerignore",
+    "data": "**/__pycahce__/\n.gitignore\n*.md"
+  },
+  {
+    "path": "third_party/Dockerfile",
+    "data": "FROM scratch\nWORKDIR /third_party\nCOPY . .\n"
+  },
+  {
+    "path": "third_party/README.md",
+    "data": "Third party code used by kubeflow pipelines and kserve components. During build, the third party modules will be installed in the docker image."
+  }
+]

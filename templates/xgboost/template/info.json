@@ -3,7 +3,7 @@
   "summary": "Xgboost classifier",
   "description": "Xgboost classifier",
   "category": "classification",
-  "organization": "ibm",
+  "organization": "acme",
   "author": "",
   "latest": "1.0.0"
 }

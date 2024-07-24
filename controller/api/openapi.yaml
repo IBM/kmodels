@@ -4,8 +4,8 @@ info:
   title: KModels API
   description: API
   contact:
-    name: IBM
-    url: https://www.ibm.com
+    name: ACME
+    url: https://www.acme.com
   version: 1.0.0
 
 servers:
